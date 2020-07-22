@@ -1,59 +1,9 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Sep 11 18:46:22 2018
-@author: lilong
-"""
-
-"""
-由原始文本进行分词后保存到新的文件
-"""
-import os
-import sys
-import time
-
-import jieba
-
-_WORK_DIR = os.path.split(os.path.realpath(__file__))[0]
-sys.path.append(os.path.join(_WORK_DIR, '../common'))
-import utils
-
-filePath = '../data/corpus.txt'
-fileSegWordDonePath = '../data/corpusSegDone.txt'
-
-# 打印中文列表
-def PrintListChinese(list):
-    for i in range(len(list)):
-        print(list[i])
-
-    # 读取文件内容到列表
-
-
-fileTrainRead = []
-with open(filePath, 'r') as fileTrainRaw:
-    for line in fileTrainRaw:  # 按行读取文件
-        fileTrainRead.append(line)
-
-# jieba分词后保存在列表中
-fileTrainSeg = []
-
-for i in range(len(fileTrainRead)):
-    fileTrainSeg.append([' '.join(list(jieba.cut(fileTrainRead[i][9:-11], cut_all=False)))])
-    # if i % 100 == 0:
-    # print("Seg %i" % i)
-    percentage = int(i / len(fileTrainRead) * 100.0)
-    utils.print_progress("Seg", percentage)
-
-# 保存分词结果到文件中
-with open(fileSegWordDonePath, 'w', encoding='utf-8') as fW:
-    for i in range(len(fileTrainSeg)):
-        fW.write(fileTrainSeg[i][0])
-        fW.write('\n')
-
+# coding=utf8
 """
 gensim word2vec获取词向量
 """
 
+import configparser
 import warnings
 import logging
 import os.path
@@ -66,20 +16,31 @@ from gensim.models.word2vec import LineSentence
 # 忽略警告
 warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')
 
+def get_config(config_file='./config/config.ini'):
+    parser = configparser.ConfigParser()
+    parser.read(config_file)
+    _conf_word2vec = [(key, value) for key, value in parser.items('word2vec')]
+    return dict(_conf_word2vec)
+
 if __name__ == '__main__':
     program = os.path.basename(sys.argv[0])  # 读取当前文件的文件名
     logger = logging.getLogger(program)
     logging.basicConfig(format='%(asctime)s: %(levelname)s: %(message)s', level=logging.INFO)
     logger.info("running %s" % ' '.join(sys.argv))
 
-    # inp为输入语料, outp1为输出模型, outp2为vector格式的模型
-    inp = '../data/corpusSegDone.txt'
-    out_model = 'model/corpusSegDone.model'
-    out_vector = 'model/corpusSegDone.vector'
+    # input_corpus_path为输入语料, out_model为输出模型, out_vector为vector格式的模型
+    gconfig = get_config(config_file='config/config.ini')
+    seggered_corpus_path = gconfig['word2vec_corpus_input_path']
+    out_model = gconfig['word2vec_out_model_save_path']
+    out_vector = gconfig['word2vec_out_vector_save_path']
 
+    vector_size = int(gconfig['vec_size'])
+    window_size = int(gconfig['window_size'])
+    min_count = int(gconfig['min_count'])
+    epoch_num = int(gconfig['epoch_num'])
     # 训练skip-gram模型
-    model = Word2Vec(LineSentence(inp), size=50, window=5, min_count=5,
-                     workers=multiprocessing.cpu_count())
+    model = Word2Vec(LineSentence(seggered_corpus_path), size=vector_size, window=window_size, min_count=min_count,
+                     iter=epoch_num, workers=multiprocessing.cpu_count())
 
     # 保存模型
     model.save(out_model)
