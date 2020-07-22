@@ -43,6 +43,7 @@ if __name__ == "__main__":
     # jieba分词后保存在列表中
     fileTrainSeg = []
     for i in range(len(fileTrainRead)):
+        # 9:-11索引，是因为语料中带有<content></content>标签
         fileTrainSeg.append([' '.join(list(jieba.cut(fileTrainRead[i][9:-11], cut_all=False)))])
         percentage = int(i / len(fileTrainRead) * 100.0 + 0.5)
         utils.print_progress("Segger", percentage)
